@@ -15,21 +15,46 @@ The simplest example leverages defaults for the boot disk image and size, and us
 
 ```hcl
 module "simple-vm-example" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = var.project_id
-  region     = var.region
+  zone     = "europe-west1-b"
   name       = "test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
   service_account_create = true
-  instance_count = 1
 }
-# tftest:modules=1:resources=2
+# tftest modules=1 resources=2
+
+```
+
+### Spot VM
+
+[Spot VMs](https://cloud.google.com/compute/docs/instances/spot) are ephemeral compute instances suitable for batch jobs and fault-tolerant workloads. Spot VMs provide new features that [preemptible instances](https://cloud.google.com/compute/docs/instances/preemptible) do not support, such as the absence of a maximum runtime.
+
+```hcl
+module "spot-vm-example" {
+  source     = "./modules/compute-vm"
+  project_id = var.project_id
+  zone     = "europe-west1-b"
+  name       = "test"
+  options = {
+    allow_stopping_for_update = true
+    deletion_protection       = false
+    spot                      = true
+  }
+  network_interfaces = [{
+    network    = var.vpc.self_link
+    subnetwork = var.subnet.self_link
+    nat        = false
+    addresses  = null
+  }]
+  service_account_create = true
+}
+# tftest modules=1 resources=2
 
 ```
 
@@ -46,16 +71,15 @@ This is an example of attaching a pre-existing regional PD to a new instance:
 
 ```hcl
 module "simple-vm-example" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = var.project_id
-  region     = var.region
+  zone     = "${var.region}-b"
   name       = "test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
   attached_disks = [{
     name        = "repd-1"
@@ -63,31 +87,29 @@ module "simple-vm-example" {
     source_type = "attach"
     source      = "regions/${var.region}/disks/repd-test-1"
     options = {
-      auto_delete = false
-      mode        = null
-      regional    = true
-      type        = null
+      mode         = null
+      replica_zone = "${var.region}-c"
+      type         = null
     }
   }]
   service_account_create = true
 }
-# tftest:modules=1:resources=2
+# tftest modules=1 resources=2
 ```
 
 And the same example for an instance template (where not using the full self link of the disk triggers recreation of the template)
 
 ```hcl
 module "simple-vm-example" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = var.project_id
-  region     = var.region
+  zone     = "${var.region}-b"
   name       = "test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
   attached_disks = [{
     name        = "repd"
@@ -95,16 +117,15 @@ module "simple-vm-example" {
     source_type = "attach"
     source      = "https://www.googleapis.com/compute/v1/projects/${var.project_id}/regions/${var.region}/disks/repd-test-1"
     options = {
-      auto_delete = false
       mode        = null
-      regional    = true
+      replica_zone = "${var.region}-c"
       type        = null
     }
   }]
   service_account_create = true
-  use_instance_template  = true
+  create_template  = true
 }
-# tftest:modules=1:resources=2
+# tftest modules=1 resources=2
 ```
 
 ### Disk encryption with Cloud KMS
@@ -113,16 +134,15 @@ This example shows how to control disk encryption via the the `encryption` varia
 
 ```hcl
 module "kms-vm-example" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = var.project_id
-  region     = var.region
+  zone       = "europe-west1-b"
   name       = "kms-test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
   attached_disks = [
     {
@@ -134,7 +154,6 @@ module "kms-vm-example" {
     }
   ]
   service_account_create = true
-  instance_count         = 1
   boot_disk = {
     image        = "projects/debian-cloud/global/images/family/debian-10"
     type         = "pd-ssd"
@@ -146,36 +165,88 @@ module "kms-vm-example" {
     kms_key_self_link       = var.kms_key.self_link
   }
 }
-# tftest:modules=1:resources=3
+# tftest modules=1 resources=3
 ```
 
 ### Using Alias IPs
 
-This example shows how add additional [Alias IPs](https://cloud.google.com/vpc/docs/alias-ip) to your VM.
+This example shows how to add additional [Alias IPs](https://cloud.google.com/vpc/docs/alias-ip) to your VM.
 
 ```hcl
 module "vm-with-alias-ips" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = "my-project"
-  region     = "europe-west1"
+  zone       = "europe-west1-b"
   name       = "test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips = {
-      alias1 = [
-        "10.16.0.10/32", # alias1 IP for first instance
-        "10.16.0.11/32", # alias1 IP for second instance
-        "10.16.0.12/32", # alias1 IP for third instance
-      ]
-    }
   }]
+  network_interface_options = {
+    0 = {
+      alias_ips = {
+        alias1 = "10.16.0.10/32"
+      }
+      nic_type   = null
+    }
+  }
   service_account_create = true
-  instance_count         = 3
 }
-# tftest:modules=1:resources=4
+# tftest modules=1 resources=2
+```
+
+### Using gVNIC
+
+This example shows how to enable [gVNIC](https://cloud.google.com/compute/docs/networking/using-gvnic) on your VM by customizing a `cos` image. Given that gVNIC needs to be enabled as an instance configuration and as a guest os configuration, you'll need to supply a bootable disk with `guest_os_features=GVNIC`. `SEV_CAPABLE`, `UEFI_COMPATIBLE` and `VIRTIO_SCSI_MULTIQUEUE` are enabled implicitly in the `cos`, `rhel`, `centos` and other images.
+
+```hcl
+
+resource "google_compute_image" "cos-gvnic" {
+  project       = "my-project"
+  name          = "my-image"
+  source_image  = "https://www.googleapis.com/compute/v1/projects/cos-cloud/global/images/cos-89-16108-534-18"
+
+  guest_os_features {
+    type = "GVNIC"
+  }
+  guest_os_features {
+    type = "SEV_CAPABLE"
+  }
+  guest_os_features {
+    type = "UEFI_COMPATIBLE"
+  }
+  guest_os_features {
+    type = "VIRTIO_SCSI_MULTIQUEUE"
+  }
+}
+
+module "vm-with-gvnic" {
+  source     = "./modules/compute-vm"
+  project_id = "my-project"
+  zone       = "europe-west1-b"
+  name       = "test"
+  boot_disk      = {
+      image = google_compute_image.cos-gvnic.self_link
+      type  = "pd-ssd"
+      size  = 10
+  }
+  network_interfaces = [{
+    network    = var.vpc.self_link
+    subnetwork = var.subnet.self_link
+    nat        = false
+    addresses  = null
+  }]
+  network_interface_options = {
+    0 = {
+      alias_ips  = null
+      nic_type   = "GVNIC"
+    }
+  }
+  service_account_create = true
+}
+# tftest modules=1 resources=2
 ```
 
 ### Instance template
@@ -184,18 +255,16 @@ This example shows how to use the module to manage an instance template that def
 
 ```hcl
 module "cos-test" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = "my-project"
-  region     = "europe-west1"
+  zone     = "europe-west1-b"
   name       = "test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
-  instance_count = 1
   boot_disk      = {
     image = "projects/cos-cloud/global/images/family/cos-stable"
     type  = "pd-ssd"
@@ -211,9 +280,9 @@ module "cos-test" {
     }
   ]
   service_account        = "vm-default@my-project.iam.gserviceaccount.com"
-  use_instance_template  = true
+  create_template  = true
 }
-# tftest:modules=1:resources=1
+# tftest modules=1 resources=1
 ```
 
 ### Instance group
@@ -226,16 +295,15 @@ locals {
 }
 
 module "instance-group" {
-  source     = "github.com/dapperlabs-platform/terraform-google-compute-vm?ref=tag"
+  source     = "./modules/compute-vm"
   project_id = "my-project"
-  region     = "europe-west1"
+  zone     = "europe-west1-b"
   name       = "ilb-test"
   network_interfaces = [{
     network    = var.vpc.self_link
     subnetwork = var.subnet.self_link
     nat        = false
     addresses  = null
-    alias_ips  = null
   }]
   boot_disk = {
     image = "projects/cos-cloud/global/images/family/cos-stable"
@@ -249,64 +317,61 @@ module "instance-group" {
   }
   group = { named_ports = {} }
 }
-# tftest:modules=1:resources=2
+# tftest modules=1 resources=2
 ```
-
 <!-- BEGIN TFDOC -->
 
 ## Variables
 
-| name                     | description                                                                                                                                                                      |                                                                                                                                                                                   type                                                                                                                                                                                    | required |                                                                                                                                                                                                                                                                    default                                                                                                                                                                                                                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| name                     | Instances base name.                                                                                                                                                             |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |    ✓     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| network_interfaces       | Network interfaces configuration. Use self links for Shared VPC, set addresses and alias_ips to null if not needed.                                                              |  <code title="list&#40;object&#40;&#123;&#10;nat        &#61; bool&#10;network    &#61; string&#10;subnetwork &#61; string&#10;addresses &#61; object&#40;&#123;&#10;internal &#61; list&#40;string&#41;&#10;external &#61; list&#40;string&#41;&#10;&#125;&#41;&#10;alias_ips &#61; map&#40;list&#40;string&#41;&#41;&#10;&#125;&#41;&#41;">list(object({...}))</code>   |    ✓     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| project_id               | Project id.                                                                                                                                                                      |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |    ✓     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| region                   | Compute region.                                                                                                                                                                  |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |    ✓     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| _attached_disk_defaults_ | Defaults for attached disks options.                                                                                                                                             |                                                                                               <code title="object&#40;&#123;&#10;auto_delete &#61; bool&#10;mode        &#61; string&#10;regional    &#61; bool&#10;type &#61; string&#10;&#125;&#41;">object({...})</code>                                                                                               |          |                                                                                                                                                                                 <code title="&#123;&#10;auto_delete &#61; true&#10;mode        &#61; &#34;READ_WRITE&#34;&#10;regional    &#61; false&#10;type &#61; &#34;pd-ssd&#34;&#10;&#125;">...</code>                                                                                                                                                                                  |
-| _attached_disks_         | Additional disks, if options is null defaults will be used in its place. Source type is one of 'image' (zonal disks in vms and template), 'snapshot' (vm), 'existing', and null. | <code title="list&#40;object&#40;&#123;&#10;name        &#61; string&#10;size        &#61; string&#10;source      &#61; string&#10;source_type &#61; string&#10;options &#61; object&#40;&#123;&#10;auto_delete &#61; bool&#10;mode        &#61; string&#10;regional    &#61; bool&#10;type &#61; string&#10;&#125;&#41;&#10;&#125;&#41;&#41;">list(object({...}))</code> |          | <code title="&#91;&#93;&#10;validation &#123;&#10;condition &#61; length&#40;&#91;&#10;for d in var.attached_disks : d if&#40;&#10;d.source_type &#61;&#61; null&#10;&#124;&#124;&#10;contains&#40;&#91;&#34;image&#34;, &#34;snapshot&#34;, &#34;attach&#34;&#93;, coalesce&#40;d.source_type, &#34;1&#34;&#41;&#41;&#10;&#41;&#10;&#93;&#41; &#61;&#61; length&#40;var.attached_disks&#41;&#10;error_message &#61; &#34;Source type must be one of &#39;image&#39;, &#39;snapshot&#39;, &#39;attach&#39;, null.&#34;&#10;&#125;">...</code> |
-| _boot_disk_              | Boot disk properties.                                                                                                                                                            |                                                                                                                 <code title="object&#40;&#123;&#10;image &#61; string&#10;size  &#61; number&#10;type &#61; string&#10;&#125;&#41;">object({...})</code>                                                                                                                  |          |                                                                                                                                                                       <code title="&#123;&#10;image &#61; &#34;projects&#47;debian-cloud&#47;global&#47;images&#47;family&#47;debian-10&#34;&#10;type &#61; &#34;pd-ssd&#34;&#10;size  &#61; 10&#10;&#125;">...</code>                                                                                                                                                                        |
-| _can_ip_forward_         | Enable IP forwarding.                                                                                                                                                            |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _confidential_compute_   | Enable Confidential Compute for these instances.                                                                                                                                 |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _enable_display_         | Enable virtual display on the instances                                                                                                                                          |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _encryption_             | Encryption options. Only one of kms_key_self_link and disk_encryption_key_raw may be set. If needed, you can specify to encrypt or not the boot disk.                            |                                                                                       <code title="object&#40;&#123;&#10;encrypt_boot            &#61; bool&#10;disk_encryption_key_raw &#61; string&#10;kms_key_self_link       &#61; string&#10;&#125;&#41;">object({...})</code>                                                                                       |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _group_                  | Define this variable to create an instance group for instances. Disabled for template use.                                                                                       |                                                                                                                              <code title="object&#40;&#123;&#10;named_ports &#61; map&#40;number&#41;&#10;&#125;&#41;">object({...})</code>                                                                                                                               |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _hostname_               | Instance FQDN name.                                                                                                                                                              |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _iam_                    | IAM bindings in {ROLE => [MEMBERS]} format.                                                                                                                                      |                                                                                                                                                 <code title="map&#40;list&#40;string&#41;&#41;">map(list(string))</code>                                                                                                                                                  |          |                                                                                                                                                                                                                                                           <code title="">{}</code>                                                                                                                                                                                                                                                            |
-| _instance_count_         | Number of instances to create (only for non-template usage).                                                                                                                     |                                                                                                                                                                       <code title="">number</code>                                                                                                                                                                        |          |                                                                                                                                                                                                                                                            <code title="">1</code>                                                                                                                                                                                                                                                            |
-| _instance_type_          | Instance type.                                                                                                                                                                   |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |          |                                                                                                                                                                                                                                                        <code title="">f1-micro</code>                                                                                                                                                                                                                                                         |
-| _labels_                 | Instance labels.                                                                                                                                                                 |                                                                                                                                                           <code title="map&#40;string&#41;">map(string)</code>                                                                                                                                                            |          |                                                                                                                                                                                                                                                           <code title="">{}</code>                                                                                                                                                                                                                                                            |
-| _metadata_               | Instance metadata.                                                                                                                                                               |                                                                                                                                                           <code title="map&#40;string&#41;">map(string)</code>                                                                                                                                                            |          |                                                                                                                                                                                                                                                           <code title="">{}</code>                                                                                                                                                                                                                                                            |
-| _metadata_list_          | List of instance metadata that will be cycled through. Ignored for template use.                                                                                                 |                                                                                                                                                 <code title="list&#40;map&#40;string&#41;&#41;">list(map(string))</code>                                                                                                                                                  |          |                                                                                                                                                                                                                                                           <code title="">[]</code>                                                                                                                                                                                                                                                            |
-| _min_cpu_platform_       | Minimum CPU platform.                                                                                                                                                            |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _options_                | Instance options.                                                                                                                                                                |                                                                                      <code title="object&#40;&#123;&#10;allow_stopping_for_update &#61; bool&#10;deletion_protection       &#61; bool&#10;preemptible               &#61; bool&#10;&#125;&#41;">object({...})</code>                                                                                      |          |                                                                                                                                                                                    <code title="&#123;&#10;allow_stopping_for_update &#61; true&#10;deletion_protection       &#61; false&#10;preemptible               &#61; false&#10;&#125;">...</code>                                                                                                                                                                                    |
-| _scratch_disks_          | Scratch disks configuration.                                                                                                                                                     |                                                                                                                        <code title="object&#40;&#123;&#10;count     &#61; number&#10;interface &#61; string&#10;&#125;&#41;">object({...})</code>                                                                                                                         |          |                                                                                                                                                                                                                      <code title="&#123;&#10;count     &#61; 0&#10;interface &#61; &#34;NVME&#34;&#10;&#125;">...</code>                                                                                                                                                                                                                      |
-| _service_account_        | Service account email. Unused if service account is auto-created.                                                                                                                |                                                                                                                                                                       <code title="">string</code>                                                                                                                                                                        |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _service_account_create_ | Auto-create service account.                                                                                                                                                     |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _service_account_scopes_ | Scopes applied to service account.                                                                                                                                               |                                                                                                                                                          <code title="list&#40;string&#41;">list(string)</code>                                                                                                                                                           |          |                                                                                                                                                                                                                                                           <code title="">[]</code>                                                                                                                                                                                                                                                            |
-| _shielded_config_        | Shielded VM configuration of the instances.                                                                                                                                      |                                                                                   <code title="object&#40;&#123;&#10;enable_secure_boot          &#61; bool&#10;enable_vtpm                 &#61; bool&#10;enable_integrity_monitoring &#61; bool&#10;&#125;&#41;">object({...})</code>                                                                                   |          |                                                                                                                                                                                                                                                          <code title="">null</code>                                                                                                                                                                                                                                                           |
-| _single_name_            | Do not append progressive count to instance name.                                                                                                                                |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _tags_                   | Instance tags.                                                                                                                                                                   |                                                                                                                                                          <code title="list&#40;string&#41;">list(string)</code>                                                                                                                                                           |          |                                                                                                                                                                                                                                                           <code title="">[]</code>                                                                                                                                                                                                                                                            |
-| _use_instance_template_  | Create instance template instead of instances.                                                                                                                                   |                                                                                                                                                                        <code title="">bool</code>                                                                                                                                                                         |          |                                                                                                                                                                                                                                                          <code title="">false</code>                                                                                                                                                                                                                                                          |
-| _zones_                  | Compute zone, instance will cycle through the list, defaults to the 'b' zone in the region.                                                                                      |                                                                                                                                                          <code title="list&#40;string&#41;">list(string)</code>                                                                                                                                                           |          |                                                                                                                                                                                                                                                           <code title="">[]</code>                                                                                                                                                                                                                                                            |
+| name | description | type | required | default |
+|---|---|:---:|:---:|:---:|
+| [name](variables.tf#L160) | Instance name. | <code>string</code> | ✓ |  |
+| [network_interfaces](variables.tf#L174) | Network interfaces configuration. Use self links for Shared VPC, set addresses to null if not needed. | <code title="list&#40;object&#40;&#123;&#10;  nat        &#61; bool&#10;  network    &#61; string&#10;  subnetwork &#61; string&#10;  addresses &#61; object&#40;&#123;&#10;    internal &#61; string&#10;    external &#61; string&#10;  &#125;&#41;&#10;&#125;&#41;&#41;">list&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> | ✓ |  |
+| [project_id](variables.tf#L201) | Project id. | <code>string</code> | ✓ |  |
+| [zone](variables.tf#L260) | Compute zone. | <code>string</code> | ✓ |  |
+| [attached_disk_defaults](variables.tf#L17) | Defaults for attached disks options. | <code title="object&#40;&#123;&#10;  mode         &#61; string&#10;  replica_zone &#61; string&#10;  type         &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  auto_delete  &#61; true&#10;  mode         &#61; &#34;READ_WRITE&#34;&#10;  replica_zone &#61; null&#10;  type         &#61; &#34;pd-balanced&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |
+| [attached_disks](variables.tf#L32) | Additional disks, if options is null defaults will be used in its place. Source type is one of 'image' (zonal disks in vms and template), 'snapshot' (vm), 'existing', and null. | <code title="list&#40;object&#40;&#123;&#10;  name        &#61; string&#10;  size        &#61; string&#10;  source      &#61; string&#10;  source_type &#61; string&#10;  options &#61; object&#40;&#123;&#10;    mode         &#61; string&#10;    replica_zone &#61; string&#10;    type         &#61; string&#10;  &#125;&#41;&#10;&#125;&#41;&#41;">list&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#91;&#93;</code> |
+| [boot_disk](variables.tf#L58) | Boot disk properties. | <code title="object&#40;&#123;&#10;  image &#61; string&#10;  size  &#61; number&#10;  type  &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  image &#61; &#34;projects&#47;debian-cloud&#47;global&#47;images&#47;family&#47;debian-11&#34;&#10;  type  &#61; &#34;pd-balanced&#34;&#10;  size  &#61; 10&#10;&#125;">&#123;&#8230;&#125;</code> |
+| [boot_disk_delete](variables.tf#L72) | Auto delete boot disk. | <code>bool</code> |  | <code>true</code> |
+| [can_ip_forward](variables.tf#L78) | Enable IP forwarding. | <code>bool</code> |  | <code>false</code> |
+| [confidential_compute](variables.tf#L84) | Enable Confidential Compute for these instances. | <code>bool</code> |  | <code>false</code> |
+| [create_template](variables.tf#L90) | Create instance template instead of instances. | <code>bool</code> |  | <code>false</code> |
+| [description](variables.tf#L95) | Description of a Compute Instance. | <code>string</code> |  | <code>&#34;Managed by the compute-vm Terraform module.&#34;</code> |
+| [enable_display](variables.tf#L100) | Enable virtual display on the instances. | <code>bool</code> |  | <code>false</code> |
+| [encryption](variables.tf#L106) | Encryption options. Only one of kms_key_self_link and disk_encryption_key_raw may be set. If needed, you can specify to encrypt or not the boot disk. | <code title="object&#40;&#123;&#10;  encrypt_boot            &#61; bool&#10;  disk_encryption_key_raw &#61; string&#10;  kms_key_self_link       &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
+| [group](variables.tf#L116) | Define this variable to create an instance group for instances. Disabled for template use. | <code title="object&#40;&#123;&#10;  named_ports &#61; map&#40;number&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
+| [hostname](variables.tf#L124) | Instance FQDN name. | <code>string</code> |  | <code>null</code> |
+| [iam](variables.tf#L130) | IAM bindings in {ROLE => [MEMBERS]} format. | <code>map&#40;list&#40;string&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
+| [instance_type](variables.tf#L136) | Instance type. | <code>string</code> |  | <code>&#34;f1-micro&#34;</code> |
+| [labels](variables.tf#L142) | Instance labels. | <code>map&#40;string&#41;</code> |  | <code>&#123;&#125;</code> |
+| [metadata](variables.tf#L148) | Instance metadata. | <code>map&#40;string&#41;</code> |  | <code>&#123;&#125;</code> |
+| [min_cpu_platform](variables.tf#L154) | Minimum CPU platform. | <code>string</code> |  | <code>null</code> |
+| [network_interface_options](variables.tf#L165) | Network interfaces extended options. The key is the index of the inteface to configure. The value is an object with alias_ips and nic_type. Set alias_ips or nic_type to null if you need only one of them. | <code title="map&#40;object&#40;&#123;&#10;  alias_ips &#61; map&#40;string&#41;&#10;  nic_type  &#61; string&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
+| [options](variables.tf#L187) | Instance options. | <code title="object&#40;&#123;&#10;  allow_stopping_for_update &#61; bool&#10;  deletion_protection       &#61; bool&#10;  spot                      &#61; bool&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  allow_stopping_for_update &#61; true&#10;  deletion_protection       &#61; false&#10;  spot                      &#61; false&#10;&#125;">&#123;&#8230;&#125;</code> |
+| [scratch_disks](variables.tf#L206) | Scratch disks configuration. | <code title="object&#40;&#123;&#10;  count     &#61; number&#10;  interface &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  count     &#61; 0&#10;  interface &#61; &#34;NVME&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |
+| [service_account](variables.tf#L218) | Service account email. Unused if service account is auto-created. | <code>string</code> |  | <code>null</code> |
+| [service_account_create](variables.tf#L224) | Auto-create service account. | <code>bool</code> |  | <code>false</code> |
+| [service_account_scopes](variables.tf#L232) | Scopes applied to service account. | <code>list&#40;string&#41;</code> |  | <code>&#91;&#93;</code> |
+| [shielded_config](variables.tf#L238) | Shielded VM configuration of the instances. | <code title="object&#40;&#123;&#10;  enable_secure_boot          &#61; bool&#10;  enable_vtpm                 &#61; bool&#10;  enable_integrity_monitoring &#61; bool&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
+| [tag_bindings](variables.tf#L248) | Tag bindings for this instance, in key => tag value id format. | <code>map&#40;string&#41;</code> |  | <code>null</code> |
+| [tags](variables.tf#L254) | Instance network tags for firewall rule targets. | <code>list&#40;string&#41;</code> |  | <code>&#91;&#93;</code> |
 
 ## Outputs
 
-| name                      | description                                    | sensitive |
-| ------------------------- | ---------------------------------------------- | :-------: |
-| external_ips              | Instance main interface external IP addresses. |           |
-| groups                    | Instance group resources.                      |           |
-| instances                 | Instance resources.                            |           |
-| internal_ips              | Instance main interface internal IP addresses. |           |
-| names                     | Instance names.                                |           |
-| self_links                | Instance self links.                           |           |
-| service_account           | Service account resource.                      |           |
-| service_account_email     | Service account email.                         |           |
-| service_account_iam_email | Service account email.                         |           |
-| template                  | Template resource.                             |           |
-| template_name             | Template name.                                 |           |
+| name | description | sensitive |
+|---|---|:---:|
+| [external_ip](outputs.tf#L17) | Instance main interface external IP addresses. |  |
+| [group](outputs.tf#L26) | Instance group resource. |  |
+| [instance](outputs.tf#L31) | Instance resource. |  |
+| [internal_ip](outputs.tf#L36) | Instance main interface internal IP address. |  |
+| [self_link](outputs.tf#L44) | Instance self links. |  |
+| [service_account](outputs.tf#L49) | Service account resource. |  |
+| [service_account_email](outputs.tf#L56) | Service account email. |  |
+| [service_account_iam_email](outputs.tf#L61) | Service account email. |  |
+| [template](outputs.tf#L69) | Template resource. |  |
+| [template_name](outputs.tf#L74) | Template name. |  |
 
 <!-- END TFDOC -->
-
 ## TODO
 
 - [ ] add support for instance groups
