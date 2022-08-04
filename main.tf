@@ -146,6 +146,24 @@ resource "google_compute_firewall" "allow_rdp" {
   target_tags   = local.tags
 }
 
+resource "google_compute_firewall" "additional_rules" {
+  for_each = { for o in flatten([for interface in var.network_interfaces : [
+    for k, rule in var.firewall_rules : merge(rule, {
+      # projects/<project-name>/regions/<region>/subnetworks/<subnetwork-name>/
+      key     = "${split("/", interface.subnetwork)[3]}-${split("/", interface.subnetwork)[5]}-${k}",
+      network = interface.network
+    })
+  ]]) : o.key => o }
+  name    = "${each.key}-firewall"
+  network = split("/", each.value.network)[4]
+  allow {
+    protocol = each.value.protocol
+    ports    = each.value.ports
+  }
+  source_ranges = each.value.source_ranges
+  target_tags   = local.tags
+}
+
 resource "google_compute_instance" "default" {
   provider                  = google-beta
   count                     = var.create_template ? 0 : 1
