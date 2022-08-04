@@ -154,7 +154,7 @@ resource "google_compute_firewall" "additional_rules" {
       network = interface.network
     })
   ]]) : o.key => o }
-  name    = "${each.key}-firewall"
+  name    = "${var.name}-${each.key}-firewall"
   network = split("/", each.value.network)[4]
   allow {
     protocol = each.value.protocol
@@ -181,6 +181,13 @@ resource "google_compute_instance" "default" {
   enable_display            = var.enable_display
   labels                    = var.labels
   metadata                  = var.metadata
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to Windows Keys set in the GCP UI
+      metadata["windows-keys"]
+    ]
+  }
 
   dynamic "attached_disk" {
     for_each = local.attached_disks_zonal
@@ -284,8 +291,6 @@ resource "google_compute_instance" "default" {
       enable_integrity_monitoring = config.value.enable_integrity_monitoring
     }
   }
-
-  # guest_accelerator
 }
 
 resource "google_compute_instance_iam_binding" "default" {
