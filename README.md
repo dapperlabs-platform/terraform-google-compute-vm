@@ -319,59 +319,92 @@ module "instance-group" {
 }
 # tftest modules=1 resources=2
 ```
-<!-- BEGIN TFDOC -->
 
-## Variables
+## Requirements
 
-| name | description | type | required | default |
-|---|---|:---:|:---:|:---:|
-| [name](variables.tf#L160) | Instance name. | <code>string</code> | ✓ |  |
-| [network_interfaces](variables.tf#L174) | Network interfaces configuration. Use self links for Shared VPC, set addresses to null if not needed. | <code title="list&#40;object&#40;&#123;&#10;  nat        &#61; bool&#10;  network    &#61; string&#10;  subnetwork &#61; string&#10;  addresses &#61; object&#40;&#123;&#10;    internal &#61; string&#10;    external &#61; string&#10;  &#125;&#41;&#10;&#125;&#41;&#41;">list&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> | ✓ |  |
-| [project_id](variables.tf#L201) | Project id. | <code>string</code> | ✓ |  |
-| [zone](variables.tf#L260) | Compute zone. | <code>string</code> | ✓ |  |
-| [attached_disk_defaults](variables.tf#L17) | Defaults for attached disks options. | <code title="object&#40;&#123;&#10;  mode         &#61; string&#10;  replica_zone &#61; string&#10;  type         &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  auto_delete  &#61; true&#10;  mode         &#61; &#34;READ_WRITE&#34;&#10;  replica_zone &#61; null&#10;  type         &#61; &#34;pd-balanced&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |
-| [attached_disks](variables.tf#L32) | Additional disks, if options is null defaults will be used in its place. Source type is one of 'image' (zonal disks in vms and template), 'snapshot' (vm), 'existing', and null. | <code title="list&#40;object&#40;&#123;&#10;  name        &#61; string&#10;  size        &#61; string&#10;  source      &#61; string&#10;  source_type &#61; string&#10;  options &#61; object&#40;&#123;&#10;    mode         &#61; string&#10;    replica_zone &#61; string&#10;    type         &#61; string&#10;  &#125;&#41;&#10;&#125;&#41;&#41;">list&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#91;&#93;</code> |
-| [boot_disk](variables.tf#L58) | Boot disk properties. | <code title="object&#40;&#123;&#10;  image &#61; string&#10;  size  &#61; number&#10;  type  &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  image &#61; &#34;projects&#47;debian-cloud&#47;global&#47;images&#47;family&#47;debian-11&#34;&#10;  type  &#61; &#34;pd-balanced&#34;&#10;  size  &#61; 10&#10;&#125;">&#123;&#8230;&#125;</code> |
-| [boot_disk_delete](variables.tf#L72) | Auto delete boot disk. | <code>bool</code> |  | <code>true</code> |
-| [can_ip_forward](variables.tf#L78) | Enable IP forwarding. | <code>bool</code> |  | <code>false</code> |
-| [confidential_compute](variables.tf#L84) | Enable Confidential Compute for these instances. | <code>bool</code> |  | <code>false</code> |
-| [create_template](variables.tf#L90) | Create instance template instead of instances. | <code>bool</code> |  | <code>false</code> |
-| [description](variables.tf#L95) | Description of a Compute Instance. | <code>string</code> |  | <code>&#34;Managed by the compute-vm Terraform module.&#34;</code> |
-| [enable_display](variables.tf#L100) | Enable virtual display on the instances. | <code>bool</code> |  | <code>false</code> |
-| [encryption](variables.tf#L106) | Encryption options. Only one of kms_key_self_link and disk_encryption_key_raw may be set. If needed, you can specify to encrypt or not the boot disk. | <code title="object&#40;&#123;&#10;  encrypt_boot            &#61; bool&#10;  disk_encryption_key_raw &#61; string&#10;  kms_key_self_link       &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
-| [group](variables.tf#L116) | Define this variable to create an instance group for instances. Disabled for template use. | <code title="object&#40;&#123;&#10;  named_ports &#61; map&#40;number&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
-| [hostname](variables.tf#L124) | Instance FQDN name. | <code>string</code> |  | <code>null</code> |
-| [iam](variables.tf#L130) | IAM bindings in {ROLE => [MEMBERS]} format. | <code>map&#40;list&#40;string&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
-| [instance_type](variables.tf#L136) | Instance type. | <code>string</code> |  | <code>&#34;f1-micro&#34;</code> |
-| [labels](variables.tf#L142) | Instance labels. | <code>map&#40;string&#41;</code> |  | <code>&#123;&#125;</code> |
-| [metadata](variables.tf#L148) | Instance metadata. | <code>map&#40;string&#41;</code> |  | <code>&#123;&#125;</code> |
-| [min_cpu_platform](variables.tf#L154) | Minimum CPU platform. | <code>string</code> |  | <code>null</code> |
-| [network_interface_options](variables.tf#L165) | Network interfaces extended options. The key is the index of the inteface to configure. The value is an object with alias_ips and nic_type. Set alias_ips or nic_type to null if you need only one of them. | <code title="map&#40;object&#40;&#123;&#10;  alias_ips &#61; map&#40;string&#41;&#10;  nic_type  &#61; string&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
-| [options](variables.tf#L187) | Instance options. | <code title="object&#40;&#123;&#10;  allow_stopping_for_update &#61; bool&#10;  deletion_protection       &#61; bool&#10;  spot                      &#61; bool&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  allow_stopping_for_update &#61; true&#10;  deletion_protection       &#61; false&#10;  spot                      &#61; false&#10;&#125;">&#123;&#8230;&#125;</code> |
-| [scratch_disks](variables.tf#L206) | Scratch disks configuration. | <code title="object&#40;&#123;&#10;  count     &#61; number&#10;  interface &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  count     &#61; 0&#10;  interface &#61; &#34;NVME&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |
-| [service_account](variables.tf#L218) | Service account email. Unused if service account is auto-created. | <code>string</code> |  | <code>null</code> |
-| [service_account_create](variables.tf#L224) | Auto-create service account. | <code>bool</code> |  | <code>false</code> |
-| [service_account_scopes](variables.tf#L232) | Scopes applied to service account. | <code>list&#40;string&#41;</code> |  | <code>&#91;&#93;</code> |
-| [shielded_config](variables.tf#L238) | Shielded VM configuration of the instances. | <code title="object&#40;&#123;&#10;  enable_secure_boot          &#61; bool&#10;  enable_vtpm                 &#61; bool&#10;  enable_integrity_monitoring &#61; bool&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
-| [tag_bindings](variables.tf#L248) | Tag bindings for this instance, in key => tag value id format. | <code>map&#40;string&#41;</code> |  | <code>null</code> |
-| [tags](variables.tf#L254) | Instance network tags for firewall rule targets. | <code>list&#40;string&#41;</code> |  | <code>&#91;&#93;</code> |
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.1.0 |
+| <a name="requirement_google"></a> [google](#requirement\_google) | >= 4.25.0 |
+| <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 4.25.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_google"></a> [google](#provider\_google) | >= 4.25.0 |
+| <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | >= 4.25.0 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_addresses"></a> [addresses](#module\_addresses) | github.com/dapperlabs-platform/terraform-google-net-address | v0.9.0 |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [google-beta_google_compute_instance.default](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_compute_instance) | resource |
+| [google-beta_google_compute_instance_template.default](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_compute_instance_template) | resource |
+| [google-beta_google_compute_region_disk.disks](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_compute_region_disk) | resource |
+| [google_compute_disk.disks](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_disk) | resource |
+| [google_compute_firewall.additional_rules](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall) | resource |
+| [google_compute_firewall.allow_rdp](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall) | resource |
+| [google_compute_instance_group.unmanaged](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance_group) | resource |
+| [google_compute_instance_iam_binding.default](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance_iam_binding) | resource |
+| [google_service_account.service_account](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
+| [google_tags_tag_binding.binding](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/tags_tag_binding) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_allow_rdp_ranges"></a> [allow\_rdp\_ranges](#input\_allow\_rdp\_ranges) | Allow connection on port 3389 from provided ranges | `list(string)` | `[]` | no |
+| <a name="input_attached_disk_defaults"></a> [attached\_disk\_defaults](#input\_attached\_disk\_defaults) | Defaults for attached disks options. | <pre>object({<br>    mode         = string<br>    replica_zone = string<br>    type         = string<br>  })</pre> | <pre>{<br>  "auto_delete": true,<br>  "mode": "READ_WRITE",<br>  "replica_zone": null,<br>  "type": "pd-balanced"<br>}</pre> | no |
+| <a name="input_attached_disks"></a> [attached\_disks](#input\_attached\_disks) | Additional disks, if options is null defaults will be used in its place. Source type is one of 'image' (zonal disks in vms and template), 'snapshot' (vm), 'existing', and null. | <pre>list(object({<br>    name        = string<br>    size        = string<br>    source      = string<br>    source_type = string<br>    options = object({<br>      mode         = string<br>      replica_zone = string<br>      type         = string<br>    })<br>  }))</pre> | `[]` | no |
+| <a name="input_boot_disk"></a> [boot\_disk](#input\_boot\_disk) | Boot disk properties. | <pre>object({<br>    image = string<br>    size  = number<br>    type  = string<br>  })</pre> | <pre>{<br>  "image": "projects/debian-cloud/global/images/family/debian-11",<br>  "size": 10,<br>  "type": "pd-balanced"<br>}</pre> | no |
+| <a name="input_boot_disk_delete"></a> [boot\_disk\_delete](#input\_boot\_disk\_delete) | Auto delete boot disk. | `bool` | `true` | no |
+| <a name="input_can_ip_forward"></a> [can\_ip\_forward](#input\_can\_ip\_forward) | Enable IP forwarding. | `bool` | `false` | no |
+| <a name="input_confidential_compute"></a> [confidential\_compute](#input\_confidential\_compute) | Enable Confidential Compute for these instances. | `bool` | `false` | no |
+| <a name="input_create_template"></a> [create\_template](#input\_create\_template) | Create instance template instead of instances. | `bool` | `false` | no |
+| <a name="input_description"></a> [description](#input\_description) | Description of a Compute Instance. | `string` | `"Managed by the compute-vm Terraform module."` | no |
+| <a name="input_enable_display"></a> [enable\_display](#input\_enable\_display) | Enable virtual display on the instances. | `bool` | `false` | no |
+| <a name="input_encryption"></a> [encryption](#input\_encryption) | Encryption options. Only one of kms\_key\_self\_link and disk\_encryption\_key\_raw may be set. If needed, you can specify to encrypt or not the boot disk. | <pre>object({<br>    encrypt_boot            = bool<br>    disk_encryption_key_raw = string<br>    kms_key_self_link       = string<br>  })</pre> | `null` | no |
+| <a name="input_firewall_rules"></a> [firewall\_rules](#input\_firewall\_rules) | Protocol/Ports/IP Ranges combinations for custom firewall rules | <pre>list(object({<br>    protocol      = string<br>    ports         = list(string)<br>    source_ranges = list(string)<br>  }))</pre> | n/a | yes |
+| <a name="input_group"></a> [group](#input\_group) | Define this variable to create an instance group for instances. Disabled for template use. | <pre>object({<br>    named_ports = map(number)<br>  })</pre> | `null` | no |
+| <a name="input_hostname"></a> [hostname](#input\_hostname) | Instance FQDN name. | `string` | `null` | no |
+| <a name="input_iam"></a> [iam](#input\_iam) | IAM bindings in {ROLE => [MEMBERS]} format. | `map(list(string))` | `{}` | no |
+| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | Instance type. | `string` | `"f1-micro"` | no |
+| <a name="input_labels"></a> [labels](#input\_labels) | Instance labels. | `map(string)` | `{}` | no |
+| <a name="input_metadata"></a> [metadata](#input\_metadata) | Instance metadata. | `map(string)` | `{}` | no |
+| <a name="input_min_cpu_platform"></a> [min\_cpu\_platform](#input\_min\_cpu\_platform) | Minimum CPU platform. | `string` | `null` | no |
+| <a name="input_name"></a> [name](#input\_name) | Instance name. | `string` | n/a | yes |
+| <a name="input_network_interface_options"></a> [network\_interface\_options](#input\_network\_interface\_options) | Network interfaces extended options. The key is the index of the inteface to configure. The value is an object with alias\_ips and nic\_type. Set alias\_ips or nic\_type to null if you need only one of them. | <pre>map(object({<br>    alias_ips = map(string)<br>    nic_type  = string<br>  }))</pre> | `{}` | no |
+| <a name="input_network_interfaces"></a> [network\_interfaces](#input\_network\_interfaces) | Network interfaces configuration. Use self links for Shared VPC, set addresses to null if not needed. | <pre>list(object({<br>    nat                       = bool<br>    network                   = string<br>    subnetwork                = string<br>    allocate_external_address = bool<br>    addresses = object({<br>      internal = string<br>      # Removing in favor of in-module IP allocation<br>      # external = string<br>    })<br>  }))</pre> | n/a | yes |
+| <a name="input_options"></a> [options](#input\_options) | Instance options. | <pre>object({<br>    allow_stopping_for_update = bool<br>    deletion_protection       = bool<br>    spot                      = bool<br>  })</pre> | <pre>{<br>  "allow_stopping_for_update": true,<br>  "deletion_protection": false,<br>  "spot": false<br>}</pre> | no |
+| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Project id. | `string` | n/a | yes |
+| <a name="input_scheduling"></a> [scheduling](#input\_scheduling) | Scheduling options. | <pre>object({<br>    on_host_maintenance = string<br>    automatic_restart   = bool<br>  })</pre> | `null` | no |
+| <a name="input_scratch_disks"></a> [scratch\_disks](#input\_scratch\_disks) | Scratch disks configuration. | <pre>object({<br>    count     = number<br>    interface = string<br>  })</pre> | <pre>{<br>  "count": 0,<br>  "interface": "NVME"<br>}</pre> | no |
+| <a name="input_service_account"></a> [service\_account](#input\_service\_account) | Service account email. Unused if service account is auto-created. | `string` | `null` | no |
+| <a name="input_service_account_create"></a> [service\_account\_create](#input\_service\_account\_create) | Auto-create service account. | `bool` | `false` | no |
+| <a name="input_service_account_scopes"></a> [service\_account\_scopes](#input\_service\_account\_scopes) | Scopes applied to service account. | `list(string)` | `[]` | no |
+| <a name="input_shielded_config"></a> [shielded\_config](#input\_shielded\_config) | Shielded VM configuration of the instances. | <pre>object({<br>    enable_secure_boot          = bool<br>    enable_vtpm                 = bool<br>    enable_integrity_monitoring = bool<br>  })</pre> | `null` | no |
+| <a name="input_tag_bindings"></a> [tag\_bindings](#input\_tag\_bindings) | Tag bindings for this instance, in key => tag value id format. | `map(string)` | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Instance network tags for firewall rule targets. | `list(string)` | `[]` | no |
+| <a name="input_zone"></a> [zone](#input\_zone) | Compute zone. | `string` | n/a | yes |
 
 ## Outputs
 
-| name | description | sensitive |
-|---|---|:---:|
-| [external_ip](outputs.tf#L17) | Instance main interface external IP addresses. |  |
-| [group](outputs.tf#L26) | Instance group resource. |  |
-| [instance](outputs.tf#L31) | Instance resource. |  |
-| [internal_ip](outputs.tf#L36) | Instance main interface internal IP address. |  |
-| [self_link](outputs.tf#L44) | Instance self links. |  |
-| [service_account](outputs.tf#L49) | Service account resource. |  |
-| [service_account_email](outputs.tf#L56) | Service account email. |  |
-| [service_account_iam_email](outputs.tf#L61) | Service account email. |  |
-| [template](outputs.tf#L69) | Template resource. |  |
-| [template_name](outputs.tf#L74) | Template name. |  |
-
-<!-- END TFDOC -->
-## TODO
-
-- [ ] add support for instance groups
+| Name | Description |
+|------|-------------|
+| <a name="output_external_ip"></a> [external\_ip](#output\_external\_ip) | Instance main interface external IP addresses. |
+| <a name="output_group"></a> [group](#output\_group) | Instance group resource. |
+| <a name="output_instance"></a> [instance](#output\_instance) | Instance resource. |
+| <a name="output_internal_ip"></a> [internal\_ip](#output\_internal\_ip) | Instance main interface internal IP address. |
+| <a name="output_self_link"></a> [self\_link](#output\_self\_link) | Instance self links. |
+| <a name="output_service_account"></a> [service\_account](#output\_service\_account) | Service account resource. |
+| <a name="output_service_account_email"></a> [service\_account\_email](#output\_service\_account\_email) | Service account email. |
+| <a name="output_service_account_iam_email"></a> [service\_account\_iam\_email](#output\_service\_account\_iam\_email) | Service account email. |
+| <a name="output_template"></a> [template](#output\_template) | Template resource. |
+| <a name="output_template_name"></a> [template\_name](#output\_template\_name) | Template name. |

@@ -99,6 +99,15 @@ variable "create_template" {
   default     = false
 }
 
+variable "firewall_rules" {
+  description = "Protocol/Ports/IP Ranges combinations for custom firewall rules"
+  type = list(object({
+    protocol      = string
+    ports         = list(string)
+    source_ranges = list(string)
+  }))
+}
+
 variable "description" {
   description = "Description of a Compute Instance."
   type        = string
