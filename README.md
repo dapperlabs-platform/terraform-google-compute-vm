@@ -7,6 +7,14 @@ This module can operate in two distinct modes:
 
 In both modes, an optional service account can be created and assigned to either instances or template. If you need a managed instance group when using the module in template mode, refer to the [`compute-mig`](../compute-mig) module.
 
+## Udpate Readme
+
+https://github.com/terraform-docs/terraform-docs
+
+```sh
+$ terraform-docs markdown table --header-from header.md . > README.md
+```
+
 ## Examples
 
 ### Instance using defaults
@@ -373,6 +381,7 @@ module "instance-group" {
 | <a name="input_encryption"></a> [encryption](#input\_encryption) | Encryption options. Only one of kms\_key\_self\_link and disk\_encryption\_key\_raw may be set. If needed, you can specify to encrypt or not the boot disk. | <pre>object({<br>    encrypt_boot            = bool<br>    disk_encryption_key_raw = string<br>    kms_key_self_link       = string<br>  })</pre> | `null` | no |
 | <a name="input_firewall_rules"></a> [firewall\_rules](#input\_firewall\_rules) | Protocol/Ports/IP Ranges combinations for custom firewall rules | <pre>list(object({<br>    protocol      = string<br>    ports         = list(string)<br>    source_ranges = list(string)<br>  }))</pre> | n/a | yes |
 | <a name="input_group"></a> [group](#input\_group) | Define this variable to create an instance group for instances. Disabled for template use. | <pre>object({<br>    named_ports = map(number)<br>  })</pre> | `null` | no |
+| <a name="input_guest_accelerator"></a> [guest\_accelerator](#input\_guest\_accelerator) | (Optional) List of the type and count of accelerator cards attached to the instance. | <pre>list(<br>    object(<br>      { type = string<br>      count = number }<br>    )<br>  )</pre> | `[]` | no |
 | <a name="input_hostname"></a> [hostname](#input\_hostname) | Instance FQDN name. | `string` | `null` | no |
 | <a name="input_iam"></a> [iam](#input\_iam) | IAM bindings in {ROLE => [MEMBERS]} format. | `map(list(string))` | `{}` | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | Instance type. | `string` | `"f1-micro"` | no |

@@ -7,6 +7,14 @@ This module can operate in two distinct modes:
 
 In both modes, an optional service account can be created and assigned to either instances or template. If you need a managed instance group when using the module in template mode, refer to the [`compute-mig`](../compute-mig) module.
 
+## Udpate Readme
+
+https://github.com/terraform-docs/terraform-docs
+
+```sh
+$ terraform-docs markdown table --header-from header.md . > README.md
+```
+
 ## Examples
 
 ### Instance using defaults

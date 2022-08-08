@@ -138,6 +138,17 @@ variable "group" {
   default = null
 }
 
+variable "guest_accelerator" {
+  description = "(Optional) List of the type and count of accelerator cards attached to the instance."
+  type = list(
+    object({
+      type  = string
+      count = number
+    })
+  )
+  default = []
+}
+
 variable "hostname" {
   description = "Instance FQDN name."
   type        = string
