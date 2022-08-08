@@ -30,7 +30,7 @@ locals {
     k => v if try(v.options.replica_zone, null) == null
   }
   on_host_maintenance = (
-    var.options.spot || var.confidential_compute
+    var.options.spot || var.confidential_compute || length(try(var.guest_accelerator, [])) > 0
     ? "TERMINATE"
     : try(var.scheduling.on_host_maintenance, "MIGRATE")
   )
@@ -182,13 +182,6 @@ resource "google_compute_instance" "default" {
   labels                    = var.labels
   metadata                  = var.metadata
 
-  lifecycle {
-    ignore_changes = [
-      # Ignore changes to Windows Keys set in the GCP UI
-      metadata["windows-keys"]
-    ]
-  }
-
   dynamic "attached_disk" {
     for_each = local.attached_disks_zonal
     iterator = config
@@ -290,6 +283,22 @@ resource "google_compute_instance" "default" {
       enable_vtpm                 = config.value.enable_vtpm
       enable_integrity_monitoring = config.value.enable_integrity_monitoring
     }
+  }
+
+  dynamic "guest_accelerator" {
+    for_each = var.guest_accelerator
+    iterator = g
+    content {
+      type  = g.value.type
+      count = g.value.count
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to Windows Keys set in the GCP UI
+      metadata["windows-keys"]
+    ]
   }
 }
 
@@ -404,6 +413,15 @@ resource "google_compute_instance_template" "default" {
       enable_secure_boot          = config.value.enable_secure_boot
       enable_vtpm                 = config.value.enable_vtpm
       enable_integrity_monitoring = config.value.enable_integrity_monitoring
+    }
+  }
+
+  dynamic "guest_accelerator" {
+    for_each = var.guest_accelerator
+    iterator = g
+    content {
+      type  = g.value.type
+      count = g.value.count
     }
   }
 
