@@ -135,7 +135,7 @@ module "addresses" {
 
 resource "google_compute_firewall" "allow_rdp" {
   for_each = { for v in var.network_interfaces : v.subnetwork => v }
-  name     = "${var.name}-firewall"
+  name     = var.name
   network  = split("/", each.value.network)[4]
   # Allow remote RDP
   allow {
@@ -154,7 +154,7 @@ resource "google_compute_firewall" "additional_rules" {
       network = interface.network
     })
   ]]) : o.key => o }
-  name    = "${var.name}-${each.key}-firewall"
+  name    = "${var.name}-${each.key}"
   network = split("/", each.value.network)[4]
   allow {
     protocol = each.value.protocol
