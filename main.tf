@@ -181,6 +181,7 @@ resource "google_compute_instance" "default" {
   enable_display            = var.enable_display
   labels                    = var.labels
   metadata                  = var.metadata
+  metadata_startup_script   = var.metadata_startup_script
 
   dynamic "attached_disk" {
     for_each = local.attached_disks_zonal
