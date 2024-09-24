@@ -146,7 +146,7 @@ variable "guest_accelerator" {
       count = number
     })
   )
-  default = []
+  default = 0
 }
 
 variable "hostname" {
